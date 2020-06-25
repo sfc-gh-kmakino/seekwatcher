@@ -146,9 +146,9 @@ def data_movie(run):
         def plotone(a, x, y, color):
             a.plot(x, y, 's', color=color, mfc=color,
                    mec=color, markersize=options.movie_cell_size)
-            a.hold(True)
+#            a.hold(True)
         alpha = 0.1
-        a.hold(False)
+#        a.hold(False)
 
         for x in range(len(prev)):
             readx, ready, writex, writey = prev[x]
@@ -228,7 +228,7 @@ def data_movie(run):
     a.set_yticklabels([])
     a.set_xlim(0, num_cells)
     a.set_ylim(0, num_cells)
-    a.hold(False)
+#    a.hold(False)
     datalen = len(data)
     bluemap = get_cmap("Blues")
     greenmap = get_cmap("Greens")
@@ -268,10 +268,14 @@ def data_movie(run):
         line.set_linestyle('None')
         line2.set_linestyle('None')
         figindex += 1
-    a.hold(True)
+#    a.hold(True)
 
     if mencoder == "png2theora":
         r = os.system("png2theora -o %s %s" % (movie_name, fname) + '-%06d.png')
+    elif mencoder == "convert":
+        r = os.system("convert %s/* raw.%s" % (png_dir, movie_name))
+        r = os.system("convert raw.%s -fuzz 10%% -layers Optimize %s" % (movie_name, movie_name))
+        os.remove("raw." + movie_name)
     else:
         r = os.system("mencoder mf://%s*.png -mf type=png:fps=%d -of mpeg -ovc lavc -lavcopts vcodec=mpeg2video:vbitrate=%s -oac copy -o %s" % (fname, movie_fps, options.movie_vbitrate, movie_name))
 
@@ -915,6 +919,11 @@ if mencoder_found and options.movie:
             # We can't get here unless mencoder is set to either mencoder or
             # png2theora, so if the encoder isn't the latter...
             mencoder = "mencoder"
+    elif options.output.endswith((".gif", ".GIF")):
+        if not check_for_mencoder("convert"):
+            print("convert required for encoding gif")
+            sys.exit(1)
+        mencoder = "convert"
     elif options.output.endswith((".png")):
         # This is the path we take if no output filename is specified.
         movie_name = "trace.ogg"
